@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import NetworkScene from '../components/CinematicBackground';
+import { ShieldAlert, AlertCircle } from 'lucide-react';
 
 function Welcome() {
   return (
@@ -41,18 +42,22 @@ export default function Login() {
         { login } = useAuth(),
         nav = useNavigate(),
         [error, setError] = useState(''),
+        [errorCode, setErrorCode] = useState(''),
         [busy, setBusy] = useState(false),
         [welcoming, setWelcoming] = useState(false);
 
   const submit = async d => {
     setBusy(true);
     setError('');
+    setErrorCode('');
     try {
       await login(d);
       setWelcoming(true);
       setTimeout(() => nav('/dashboard'), 1800);
     } catch (e) {
-      setError(e.response?.data?.error?.message || 'Unable to sign in');
+      const errData = e.response?.data?.error;
+      setError(errData?.message || 'Unable to sign in');
+      setErrorCode(errData?.code || '');
     } finally {
       setBusy(false);
     }
@@ -102,9 +107,18 @@ export default function Login() {
         </p>
 
         {error && (
-          <p className="mt-4 rounded bg-rose-950 p-3 text-sm text-rose-200">
-            {error}
-          </p>
+          <div className={`mt-4 rounded-lg p-3 text-xs leading-relaxed flex items-start gap-2.5 ${
+            errorCode === 'SESSION_LIMIT_EXCEEDED'
+              ? 'bg-amber-950/80 border border-amber-500/40 text-amber-200'
+              : 'bg-rose-950/80 border border-rose-500/30 text-rose-200'
+          }`}>
+            {errorCode === 'SESSION_LIMIT_EXCEEDED' ? (
+              <ShieldAlert className="shrink-0 text-amber-400 mt-0.5" size={16} />
+            ) : (
+              <AlertCircle className="shrink-0 text-rose-400 mt-0.5" size={16} />
+            )}
+            <span>{error}</span>
+          </div>
         )}
 
         <label className="mt-5 block text-xs font-semibold">
@@ -133,7 +147,7 @@ export default function Login() {
 
         <button
           disabled={busy}
-          className="mt-4 w-full rounded-lg bg-gradient-to-r from-cyan to-blue-600 py-2.5 text-sm font-bold"
+          className="mt-4 w-full rounded-lg bg-gradient-to-r from-cyan to-blue-600 py-2.5 text-sm font-bold disabled:opacity-50"
         >
           {busy ? 'Signing in…' : 'Login'}
         </button>
